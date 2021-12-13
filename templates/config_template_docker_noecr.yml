@@ -1,0 +1,112 @@
+# # Python CircleCI 2.0 configuration file
+# #
+# # Check https://circleci.com/docs/2.0/language-python/ for more details
+# #
+
+version: 2.1
+
+jobs:
+  build-docker:
+    steps:
+      - setup_remote_docker:
+        - checkout
+        - run: docker build -t test-build .
+
+  build-and-test:
+    # Build environment and test
+    docker:
+      - image: circleci/python: {{ pyversion }}
+    steps:
+      # Checkout repo (changes working directory to repo root)
+      - checkout
+      # Use docker to load system dependencies
+      - run:
+          name: Load System Dependencies
+          command: |-
+            sudo apt-get update -yqq
+            sudo apt-get upgrade -yqq
+            sudo apt-get install -y tree
+      # Load cache for speedup
+      - run:
+          name: Install Dependencies
+          command: |-
+            poetry export --without-hashes -f requirements.txt -o requirements.txt
+            pip install -r requirements.txt
+      # Inspect project contents
+      - run: tree -L 2
+      # Run Unit tests using pytest
+      - run:
+          name: Run Unit Tests
+          command: |-
+            # Change this location as needed! pytest doesn't always find test files automatically
+            cd src
+            pytest  
+      # Run static type checking of code with mypy. Current setup will type check for all files in
+      # src. The flags used are suitable to ensure a basic level of static typing across the project.
+      # See the README or official mypy documentation for more details.
+      - run:
+          name: Mypy Type Checking
+          command: |-
+              mypy ./src --disallow-untyped-defs --ignore-missing-imports --disallow-any-explicit           
+  
+  tartufo:
+    docker:
+      - image: circleci/python: {{ pyversion }}
+    steps:
+      # Checkout repo (changes working directory to repo root)
+      - checkout
+      - run:
+          name: Install Tartufo
+          command: python -m pip install tartufo
+      - run:
+          name: List Directories
+          command: ls
+      - run:
+      # Scan repo for secrets, exluding all file types defined in "exclude-patterns.txt"
+          name: Run Tartufo
+          command: tartufo --exclude-paths ./.circleci/exclude-patterns.txt scan-local-repo --max-depth 100 .
+  
+  frosted-flakes:
+    # If you are using super-linter on the Github Actions workflow, you can comment out this section
+      docker:
+        - image: circleci/python: {{ pyversion }} # Add python version here, such as 3.7.1 or simply 3.7
+      steps:
+        # Checkout repo (changes working directory to repo root)
+        - checkout
+        - run:
+            name: Install Flake8
+            command: python -m pip install flake8
+        - run:
+        # Flake 8 runs with longer line lengths allowed, a report of error types, and returns zero even if errors
+            name: Run Flake8
+            command: python -m flake8 --max-line-length 127 --statistics --exit-zero
+workflows:
+  # This workflow runs unit tests on python code using pytest
+  build-and-test:
+    jobs:
+      - build-and-test:
+          filters:
+            branches:
+              only:
+                - dev
+                - test
+
+  # This workflow scans the repo for any secrets (credentials) that shouldn't be there using the wonderful tartufo utility
+  secrets_scan:
+    jobs:
+      - tartufo:
+          filters:
+            branches:
+              only:
+                - dev
+                - test
+  
+  # This workflow runs the linter flake8 on any python code in the repo to flag any deviations from PEP8 standards
+  linter:
+    jobs:
+      - frosted-flakes:
+          filters:
+            branches:
+              only:
+                - dev
+                - test

@@ -1,0 +1,7 @@
+uvicorn
+sqlalchemy
+fastapi
+pydantic
+requests
+starlette==0.13.6
+jinja2

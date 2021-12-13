@@ -1,0 +1,86 @@
+name: master
+# This workflow is triggered on push and PR to master
+on:
+    pull_request:
+      branches:
+        - master
+    push:
+      branches:
+        - master
+
+jobs:
+    buildit:
+      # Job name is Building
+      name: Build
+      # This job runs on Linux
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+          - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+              python-version: {{ pyversion }}
+
+          - name: Install Dependencies
+            run: |
+              pip install --upgrade pip
+              pip install pytest pytest-cov tartufo poetry mypy
+              if [ -f "requirements.txt" ]; then
+                echo "requirements.txt exists..."
+                pip install -r requirements.txt
+              else
+                if [ -f "config.toml" ]; then
+                  poetry export --without-hashes -f requirements.txt -o requirements.txt
+                  pip install -r requirements.txt
+                fi
+              fi
+              
+
+          - name: Secrets Scan
+            run: tartufo --exclude-paths ./.github/workflows/exclude-patterns.txt scan-local-repo --max-depth 50 .
+
+          # Test code with pytest. If you have unit tests written with the unittest module, replace pytest
+          # with a direct python call to the file containing unit tests, ie python tests_are_here.py
+          # or python -m unittest test_module.TestClass.test_method if you want to run a specific test
+          - name: Test with pytest
+            run: |
+              pytest --cov=./src --cov-report=xml
+
+          # Run Code coverage on codecov
+          - name: Code Coverage Integration
+            uses: codecov/codecov-action@v1
+            with:
+              token: {{ codecov }}
+
+          # Run static type checking of code with mypy. Current setup will type check for all files in
+          # src. The flags used are suitable to ensure a basic level of static typing across the project.
+          # See the README or official mypy documentation for more details.
+          - name: Mypy Type Checking
+            run:
+              mypy ./src --disallow-untyped-defs --ignore-missing-imports --disallow-any-explicit
+
+    lint:
+        # Name the Job
+        name: Lint Code Base
+        # Set the agent to run on
+        runs-on: ubuntu-latest
+    
+        ##################
+        # Load all steps #
+        ##################
+        steps:
+          ##########################
+          # Checkout the code base #
+          ##########################
+          - name: Checkout Code
+            uses: actions/checkout@v2
+    
+          ################################
+          # Run Linter against code base #
+          ################################
+          - name: Lint Code Base
+            uses: github/super-linter@v3
+            env:
+              VALIDATE_ALL_CODEBASE: false
+              DEFAULT_BRANCH: master
+              GITHUB_TOKEN: {{ github }}

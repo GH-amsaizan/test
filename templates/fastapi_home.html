@@ -1,0 +1,186 @@
+{% extends "fastapi_layout.html" %}
+
+{% block content %}
+<script>
+$(document).ready(function () {
+    $("#add_city").click(function () {
+        $('.ui.small.modal').modal('show');
+    });
+
+    $("#saver").click(function () {
+
+        var textareaContent = $("#addcities").val();
+        var cities = textareaContent.split("\n");
+
+        for (var i = 0; i < cities.length; ++i) {
+            var zones = cities[i].split('-');
+            $.ajax({
+                url: '/cities',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ "name": zones[0], "timezone": zones[1] }),
+                dataType: 'json'
+            });
+        }
+
+        $('.ui.small.modal').modal('hide');
+    });
+
+    $("#delete_city").click(function () {
+        $('.ui.large.modal').modal('show');
+    });
+
+    $("#save").click(function () {
+
+        var textareaContent = $("#cities").val();
+        var cities = textareaContent.split("\n");
+
+        for (var i = 0; i < cities.length; ++i) {
+            var zones = cities[i].split('-');
+            $.ajax({
+                url: '/cities',
+                type: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({ "name": zones[0], "timezone": zones[1] }),
+                dataType: 'json'
+            });
+        }
+
+        $('.ui.large.modal').modal('hide');
+    });
+
+    $("#update_city").click(function () {
+        $('.ui.fullscreen.modal').modal('show');
+    });
+
+    var up = [];
+
+    $("#sav").click(function () {
+
+        var textareaContent = $("#updatecities").val();
+        var cities = textareaContent.split("\n");
+
+        for (var i = 0; i < cities.length; ++i) {
+            var zones = cities[i].split('-');
+            up.push(zones[0]);
+            up.push(zones[1]);
+        }
+
+        $.ajax({
+            url: '/update',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ "name": up[0], "timezone": up[1], "newname": up[2], "newtimezone": up[3] }),
+            dataType: 'json'
+        });
+
+        $('.ui.fullscreen.modal').modal('hide');
+    });
+
+    up = [];
+
+});
+</script>
+
+
+<h2>Filters</h2>
+
+<form method="get">
+
+<div class="ui input">
+    <input name="timezone" type="text" placeholder="Timezone" value="{{ timezone or '' }}">
+</div>
+
+<button type="submit" class="ui button primary">Filter</button>
+
+</form>
+
+<button id="add_city" class="ui button secondary">Add Cities</button>
+
+<button id="delete_city" class="ui button secondary">Delete Cities</button>
+
+<button id="update_city" class="ui button secondary">Update Cities</button>
+
+<table class="ui celled table">
+    <thead>
+        <tr>
+            <th>City</th>
+            <th>Timezone</th>
+            <th>Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in city %}
+        <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.timezone }}</td>
+            <td>{{ c.time }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="ui small modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Add Cities
+    </div>
+    <div class="content">
+        <div class="ui form">
+            <div class="field">
+                <label>'City-Timezone' Format with no spaces</label>
+                <textarea id="addcities"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div id="saver" class="ui positive right labeled icon button">
+            Add Cities
+            <i class="plus icon"></i>
+        </div>
+    </div>
+</div>
+
+<div class="ui large modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Delete Cities
+    </div>
+    <div class="content">
+        <div class="ui form">
+            <div class="field">
+                <label>'City-Timezone' Format with no spaces</label>
+                <textarea id="cities"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div id="save" class="ui positive right labeled icon button">
+            Delete Cities
+            <i class="plus icon"></i>
+        </div>
+    </div>
+</div>
+
+<div class="ui fullscreen modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Update Cities
+    </div>
+    <div class="content">
+        <div class="ui form">
+            <div class="field">
+                <label>'CurrentCity-CurrentTimezone' Format with 'NewCity-NewTimezone on next line.'</label>
+                <textarea id="updatecities"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div id="sav" class="ui positive right labeled icon button">
+            Update Cities
+            <i class="plus icon"></i>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

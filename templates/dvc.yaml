@@ -1,0 +1,31 @@
+stages:
+  clean:
+    cmd: python clean.py
+    deps:
+    - data/raw
+    - clean.py
+    outs:
+    - data/processed
+  model:
+    cmd: python build_models.py
+    deps:
+    - data/processed
+    - build_models.py
+    params:
+    - train
+    outs:
+    - data/results
+  ingest:
+    cmd: python ingest.py
+    deps:
+    - ./data/external
+    - ingest.py
+    outs:
+    - ./data/raw
+  profile:
+    cmd: python profile.py --no-exec
+    deps:
+    - ./data/raw
+    - profile.py
+    outs:
+    - ./data/profile_reports

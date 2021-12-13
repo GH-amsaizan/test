@@ -1,0 +1,28 @@
+name: Static Type Checking
+# This workflow is triggered on push and PR to master
+on:
+    pull_request:
+      branches:
+        - master
+    push:
+      branches:
+        - master
+jobs:
+  check-static-typing:
+    # This job runs on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+        
+      - name: Install dependencies
+        run:
+          pip install --upgrade pip
+          pip install mypy types-requests types-PyYAML
+
+      - name: Check types
+        # Add any files/directory names that need to be checked, see README for more information
+        run: mypy src templates --disallow-untyped-defs --ignore-missing-imports --disallow-any-explicit

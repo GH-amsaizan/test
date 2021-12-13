@@ -1,0 +1,67 @@
+name: master
+# This workflow is triggered on push and PR to master
+on:
+    pull_request:
+      branches:
+        - master
+    push:
+      branches:
+        - master
+
+jobs:
+    buildit:
+      # Job name is Building
+      name: Build
+      # This job runs on Linux
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+          - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+              python-version: 3.8
+
+          - name: Install Dependencies
+            run: |
+              pip install --upgrade pip
+              pip install pytest pytest-cov tartufo poetry
+              if [ -f "requirements.txt" ]; then
+                echo "requirements.txt exists..."
+                pip install -r requirements.txt
+              else
+                if [ -f "config.toml" ]; then
+                  poetry export --without-hashes -f requirements.txt -o requirements.txt
+                  pip install -r requirements.txt
+                fi
+              fi
+
+          - name: Secrets Scan
+            run: tartufo --exclude-paths ./.github/workflows/exclude-patterns.txt scan-local-repo --max-depth 50 .
+
+
+    lint:
+        # Name the Job
+        name: Lint Code Base
+        # Set the agent to run on
+        runs-on: ubuntu-latest
+    
+        ##################
+        # Load all steps #
+        ##################
+        steps:
+          ##########################
+          # Checkout the code base #
+          ##########################
+          - name: Checkout Code
+            uses: actions/checkout@v2
+    
+          ################################
+          # Run Linter against code base #
+          ################################
+          - name: Lint Code Base
+            uses: github/super-linter@v3
+            env:
+              VALIDATE_ALL_CODEBASE: false
+              DISABLE_ERRORS: true
+              DEFAULT_BRANCH: master
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

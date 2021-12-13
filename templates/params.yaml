@@ -1,0 +1,22 @@
+# Parameters for ML Pipeline
+# Pandas Profiling Explorative setting
+explorative: True
+
+# Build Models Ridge Model Alpha hyper-parameters
+train:
+    one:
+        alpha: 0
+    two:
+        alpha: 1000
+    three:
+        alpha: 9000
+    four:
+        alpha: 50000
+    five:
+        alpha: 300000
+    six:
+        alpha: 400000
+    seven:
+        alpha: 125000
+    eight:
+        alpha: 200000

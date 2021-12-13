@@ -1,0 +1,41 @@
+name: Integration Tests (Called Workflow)
+# This reusable workflow called by other workflows, not used directly. It allows
+# the caller workflow to specify the operating system to use.
+# https://docs.github.com/en/actions/learn-github-actions/reusing-workflows
+on:
+    workflow_call:
+      inputs:
+        os:
+          description: Operating system for the runs-on parameter.
+          required: false
+          default: ubuntu-latest
+          type: string
+
+jobs:
+    testit:
+      name: Tartufo Scan and Integration Tests
+      runs-on: ${{  inputs.os }}
+      steps:
+          - uses: actions/checkout@v2
+          - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+              python-version: 3.8
+
+          - name: Install Dependencies
+            run: |
+              pip install --upgrade pip
+              pip install pytest pytest-cov tartufo jinja2 click configparser
+
+          - name: Secrets Scan
+            run: tartufo --exclude-paths ./.github/workflows/exclude-patterns.txt scan-local-repo --max-depth 50 .
+
+          - name: Test with pytest
+            run: |
+              pytest tests/test_suite_integration.py --cov=./src --cov-report=xml
+
+          # Run Code coverage on codecov
+          - name: Code Coverage Integration
+            uses: codecov/codecov-action@v1
+            with:
+              token: ${{ secrets.CODECOV_TOKEN }}

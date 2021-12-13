@@ -1,0 +1,45 @@
+name: Unit Tests
+# This workflow is triggered on push and PR to master
+on:
+    pull_request:
+      branches:
+        - master
+    push:
+      branches:
+        - master
+        - dev
+
+jobs:
+    testit:
+      name: Tartufo Scan and Unit Tests
+      # This job runs on Linux
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+          - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+              python-version: 3.8
+
+          - name: Install Dependencies
+            run: |
+              pip install --upgrade pip
+              pip install pytest pytest-cov tartufo jinja2 click configparser
+
+          - name: Secrets Scan
+            run: tartufo --exclude-paths ./.github/workflows/exclude-patterns.txt scan-local-repo --max-depth 50 .
+
+          - name: Perform Main unit tests with pytest
+            run: |
+              pytest tests/test_suite_unit_main.py --cov=./src --cov-report=xml
+          
+          - name: Perform ML Main unit tests with pytest
+            run: |
+              pytest tests/test_suite_unit_ml.py --cov=./src --cov-report=xml
+
+          # Run Code coverage on codecov
+          - name: Code Coverage Integration
+            uses: codecov/codecov-action@v1
+            with:
+              token: ${{ secrets.CODECOV_TOKEN }}
+
